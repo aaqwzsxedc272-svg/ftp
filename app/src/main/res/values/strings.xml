@@ -10,6 +10,7 @@
 
     <string name="start">Start</string>
     <string name="stop">Stop</string>
+    <string name="restart">Restart</string>
     <string name="starting">Starting FTP server…</string>
     <string name="stopped">FTP server stopped</string>
     <string name="settings_saved">Settings saved</string>

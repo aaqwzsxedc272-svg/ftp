@@ -88,9 +88,21 @@ class FtpService : Service() {
                 return START_NOT_STICKY
             }
             ACTION_RESTART -> {
+                // Full restart with the user's saved settings (port 9999,
+                // username/password, shared folder...): ensureServerRunning()
+                // re-reads FtpSettings, so whatever is currently saved in the
+                // app is what the server comes back up with.
+                android.util.Log.i(FtpServer.TAG, "Restart requested — restarting FTP server with saved settings")
                 FtpSettings.setManuallyStopped(this, false)
+                releaseLocks()
+                acquireLocks()
                 stopServer()
                 ensureServerRunning()
+                // Safety retry in case the old socket was still closing.
+                mainHandler.postDelayed({
+                    if (server?.isRunning != true && shouldAutoRun()) ensureServerRunning()
+                    updateNotification()
+                }, 1_500)
             }
             else -> { // ACTION_START or system restart (null intent)
                 FtpSettings.setManuallyStopped(this, false)
@@ -263,6 +275,10 @@ class FtpService : Service() {
             this, 1, Intent(this, FtpService::class.java).setAction(ACTION_STOP),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
+        val restartIntent = PendingIntent.getService(
+            this, 2, Intent(this, FtpService::class.java).setAction(ACTION_RESTART),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_ftp_notification)
             .setContentTitle(getString(R.string.notification_title))
@@ -271,6 +287,7 @@ class FtpService : Service() {
             .setContentIntent(openIntent)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
+            .addAction(0, getString(R.string.restart), restartIntent)
             .addAction(0, getString(R.string.stop), stopIntent)
             .build()
     }
