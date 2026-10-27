@@ -221,7 +221,14 @@ class FtpSession(
     }
 
     private fun list(arg: String, namesOnly: Boolean) {
-        val pathArg = arg.takeUnless { it.startsWith("-") } ?: ""
+        // Some clients send options like "LIST -a" or "LIST -a /some/dir":
+        // drop leading "-x" option tokens and keep the path, if any.
+        // Listing a directory includes all its files and subfolders, and
+        // clients can then navigate into subfolders (CWD) and copy files
+        // out (RETR) recursively.
+        val pathArg = arg.split(' ')
+            .filter { it.isNotEmpty() && !it.startsWith("-") }
+            .joinToString(" ")
         val dir = resolve(pathArg.ifEmpty { cwd }) ?: return reply(550, "Invalid path")
         if (!dir.exists()) return reply(550, "Not found")
         val entries: List<File> = when {

@@ -53,6 +53,18 @@ class MainActivity : AppCompatActivity() {
                 toast(getString(R.string.folder_pick_failed))
                 return@registerForActivityResult
             }
+            // The whole picked folder — including every subfolder and file
+            // inside it — becomes available over FTP for reading/copying.
+            val folder = File(path)
+            if (!folder.canRead() || folder.listFiles() == null) {
+                // Android is blocking raw file access to this folder: the user
+                // needs "All files access" for the server to read it.
+                rootInput.setText(path)
+                saveSettingsFromUi()
+                toast(getString(R.string.folder_needs_access, path))
+                requestAllFilesAccess()
+                return@registerForActivityResult
+            }
             rootInput.setText(path)
             saveSettingsFromUi()
             if (FtpService.isRunning) FtpService.restart(this)
@@ -124,6 +136,20 @@ class MainActivity : AppCompatActivity() {
         findViewById<Button>(R.id.stopButton).setOnClickListener {
             FtpService.stop(this)
             toast(getString(R.string.stopped))
+        }
+        findViewById<Button>(R.id.pickFolderButton).setOnClickListener {
+            // Open the system folder chooser directly on the phone's internal
+            // storage, so the user browses the phone's folders and taps
+            // "Use this folder" on the one to share. Everything inside it —
+            // all subfolders and files — is then readable/copyable over FTP.
+            val initialUri = try {
+                DocumentsContract.buildTreeDocumentUri(
+                    "com.android.externalstorage.documents", "primary:"
+                )
+            } catch (_: Exception) {
+                null
+            }
+            folderPickerLauncher.launch(initialUri)
         }
         findViewById<Button>(R.id.saveButton).setOnClickListener {
             saveSettingsFromUi()
