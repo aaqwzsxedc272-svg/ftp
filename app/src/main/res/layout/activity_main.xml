@@ -177,6 +177,22 @@
             android:layout_height="wrap_content"
             android:text="@string/keep_alive_explanation" />
 
+        <TextView
+            android:id="@+id/samsungText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/samsung_keep_alive"
+            android:visibility="gone" />
+
+        <Button
+            android:id="@+id/appSettingsButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/open_app_settings"
+            android:visibility="gone" />
+
         <Button
             android:id="@+id/storagePermissionButton"
             android:layout_width="match_parent"
