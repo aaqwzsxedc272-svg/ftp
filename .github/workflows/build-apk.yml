@@ -5,6 +5,10 @@ on:
   push:
     branches: ["arena/e47ee8b1-ftp"]
 
+permissions:
+  contents: write
+  issues: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -77,23 +81,14 @@ jobs:
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
 
-      # Publish the built APK into the repo itself ([skip ci] avoids a loop),
-      # so it can be pulled with plain git where artifact downloads are blocked.
-      - name: Publish APK to repo
+      # Deliver the APK through a GitHub issue (base64 chunks via the API):
+      # artifact downloads and git pushes are not reachable/writable from
+      # every environment, but the API is.
+      - name: Deliver APK via issue
         shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          set -x
           cp app/build/outputs/apk/debug/app-debug.apk PhoneFTP.apk
           ls -lh PhoneFTP.apk
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -f PhoneFTP.apk
-          git commit -m "Built PhoneFTP.apk [skip ci]" || exit 0
-          git push origin HEAD:arena/e47ee8b1-ftp 2>push-error.txt || {
-            echo "PUSH_FAILED"
-            while IFS= read -r line; do
-              esc=$(printf '%s' "$line" | sed 's/%/%25/g; s/\r/%0D/g; s/\n/%0A/g')
-              echo "::error::$esc"
-            done < push-error.txt
-            exit 1
-          }
+          python3 scripts/deliver_apk_via_issue.py PhoneFTP.apk
