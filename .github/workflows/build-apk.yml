@@ -57,6 +57,19 @@ jobs:
           path: build-log.txt
           if-no-files-found: ignore
 
+      # Temporary debugging: artifact downloads are not reachable from the
+      # dev environment, so on failure commit the log back to this branch.
+      - name: Commit build log on failure
+        if: failure()
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          cp build-log.txt ci-build-log.txt
+          git add ci-build-log.txt
+          git commit -m "CI build log [skip ci]" || exit 0
+          git push origin HEAD:arena/e47ee8b1-ftp
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
