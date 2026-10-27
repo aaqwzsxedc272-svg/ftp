@@ -15,8 +15,10 @@ import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import com.phoneftp.FtpSettings
+import java.io.File
 import com.phoneftp.R
 import com.phoneftp.ftp.LocalIp
 import com.phoneftp.service.FtpService

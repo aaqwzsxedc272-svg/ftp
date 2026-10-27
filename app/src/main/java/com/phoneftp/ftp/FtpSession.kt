@@ -44,9 +44,8 @@ class FtpSession(
             reader = BufferedReader(InputStreamReader(control.getInputStream(), Charsets.UTF_8))
             writer = BufferedWriter(OutputStreamWriter(control.getOutputStream(), Charsets.UTF_8))
             reply(220, "PhoneFTP ready")
-            var line: String?
-            while (!closed && reader.readLine().also { line = it } != null) {
-                val raw = line!!.trim()
+            while (!closed) {
+                val raw = (reader.readLine() ?: break).trim()
                 if (raw.isEmpty()) continue
                 val space = raw.indexOf(' ')
                 val cmd = (if (space < 0) raw else raw.substring(0, space)).uppercase(Locale.US)
