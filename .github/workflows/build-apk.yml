@@ -17,8 +17,14 @@ jobs:
           java-version: "17"
           distribution: "temurin"
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+      # GitHub's ubuntu runners ship with an Android SDK preinstalled
+      # (ANDROID_HOME); just make sure platform/build-tools 35 are present.
+      - name: Install Android SDK packages
+        run: |
+          echo "Using ANDROID_HOME=$ANDROID_HOME"
+          ls "$ANDROID_HOME" || true
+          yes | sdkmanager --licenses > /dev/null 2>&1 || true
+          sdkmanager "platforms;android-35" "build-tools;35.0.0"
 
       - name: Build debug APK
         run: ./gradlew assembleDebug --no-daemon --stacktrace
