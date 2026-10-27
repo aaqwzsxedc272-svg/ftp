@@ -12,7 +12,7 @@ on your phone over your local network.
 
 ## What it does
 
-- **Real FTP server** on the phone (default port **2121**, passive mode):
+- **Real FTP server** on the phone (default port **9999**, passive mode):
   login with username/password (or optional anonymous), browse, download
   (`RETR`), upload (`STOR`/`APPE`), delete, rename, create folders, resume
   downloads (`REST`).
@@ -29,7 +29,7 @@ on your phone over your local network.
     on/off**), makes sure the server (re)starts and refreshes the shown IP.
   - **Hotspot case:** connect other devices to your phone's hotspot and use
     the address shown in the app/notification — typically
-    `ftp://192.168.43.1:2121` (varies by brand).
+    `ftp://192.168.43.1:9999` (varies by brand).
 - Serves the **whole shared storage** if you grant *All files access*,
   otherwise the app-private folder on external storage. You can also type a
   custom folder path in the app.
@@ -39,7 +39,7 @@ on your phone over your local network.
 - **Samsung SM-A127F** (Galaxy A12 family), **Android 13**, One UI Core 5.1,
   Knox 3.9, security patch 2024-10-01.
 - Current Wi-Fi address seen: `192.168.1.38` → once installed, the server will
-  be at **`ftp://192.168.1.38:2121`** on that network (address changes with the
+  be at **`ftp://192.168.1.38:9999`** on that network (address changes with the
   network; the app/notification always shows the current one).
 - The app UI is in **English** and shows Samsung-specific keep-alive steps
   on Samsung devices. The shared folder is chosen in the app with the
@@ -60,7 +60,7 @@ on your phone over your local network.
    `./gradlew assembleDebug` (APK appears in
    `app/build/outputs/apk/debug/`).
 3. First launch checklist in the app:
-   - set a **username/password** (default `ftpuser` / `change-me` — change it!),
+   - set a **username/password** (default `mou` / `mou`),
    - tap **Grant all-files access** (to serve your whole storage),
    - tap **Ignore battery optimizations**,
    - on Xiaomi / Samsung / Oppo etc., also set the app battery mode to
@@ -69,13 +69,13 @@ on your phone over your local network.
 4. From another device on the same Wi-Fi (or connected to your hotspot),
    open the shown address in any FTP client (FileZilla, Windows Explorer
    address bar, FE File Explorer, `curl ftp://…`, …):
-   `ftp://192.168.x.x:2121`, passive mode.
+   `ftp://192.168.x.x:9999`, passive mode.
 
 ## Notes / limits
 
 - **Plain FTP is not encrypted** — passwords and files travel in clear text.
   Use it on networks you trust (home Wi-Fi / your own hotspot). Don't expose
-  port 2121 to the internet. (SFTP/FTPS can be added later if needed.)
+  port 9999 to the internet. (SFTP/FTPS can be added later if needed.)
 - Passive data ports: `50000–50100`. Clients on the same LAN/hotspot need no
   router configuration.
 - Android itself can still stop any app in extreme cases (force-stop from

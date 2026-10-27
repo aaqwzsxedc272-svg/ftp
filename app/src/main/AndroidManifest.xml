@@ -51,6 +51,20 @@
                 android:value="Always-on FTP file server started by the user; must keep running across network changes so other devices on the local network / hotspot can connect at any time." />
         </service>
 
+        <!-- Wakes the app on Wi-Fi / hotspot (point d'accès mobile) changes
+             even if the process was killed, to (re)start the FTP service. -->
+        <receiver
+            android:name=".service.AutoStartReceiver"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.net.wifi.WIFI_AP_STATE_CHANGED" />
+                <action android:name="android.net.conn.TETHER_STATE_CHANGED" />
+                <action android:name="android.net.conn.CONNECTIVITY_CHANGE" />
+                <action android:name="android.net.wifi.WIFI_STATE_CHANGED" />
+            </intent-filter>
+        </receiver>
+
         <receiver
             android:name=".service.BootReceiver"
             android:enabled="true"

@@ -31,9 +31,16 @@ data class FtpSettings(
     }
 
     companion object {
-        const val DEFAULT_PORT = 2121
-        const val DEFAULT_USERNAME = "ftpuser"
-        const val DEFAULT_PASSWORD = "change-me"
+        const val DEFAULT_PORT = 9999
+        const val DEFAULT_USERNAME = "mou"
+        const val DEFAULT_PASSWORD = "mou"
+
+        // Previous defaults (before v0.2) — used for a one-time migration so
+        // existing installs that never changed them move to the new defaults.
+        private const val OLD_DEFAULT_PORT = 2121
+        private const val OLD_DEFAULT_USERNAME = "ftpuser"
+        private const val OLD_DEFAULT_PASSWORD = "change-me"
+        private const val KEY_DEFAULTS_V2 = "defaults_v2_applied"
 
         private const val PREFS = "phone_ftp_settings"
         private const val KEY_MANUALLY_STOPPED = "manually_stopped"
@@ -44,11 +51,30 @@ data class FtpSettings(
 
         fun load(context: Context): FtpSettings {
             val p = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            var port = p.getInt("port", DEFAULT_PORT).coerceIn(1024, 65535)
+            var username = p.getString("username", DEFAULT_USERNAME)?.takeIf { it.isNotBlank() }
+                ?: DEFAULT_USERNAME
+            var password = p.getString("password", DEFAULT_PASSWORD) ?: DEFAULT_PASSWORD
+
+            // One-time migration: installs still using the OLD defaults
+            // (never customized by the user) move to the new defaults
+            // (port 9999, username/password "mou"). Custom values are kept.
+            if (!p.getBoolean(KEY_DEFAULTS_V2, false)) {
+                if (port == OLD_DEFAULT_PORT) port = DEFAULT_PORT
+                if (username == OLD_DEFAULT_USERNAME) username = DEFAULT_USERNAME
+                if (password == OLD_DEFAULT_PASSWORD) password = DEFAULT_PASSWORD
+                p.edit()
+                    .putInt("port", port)
+                    .putString("username", username)
+                    .putString("password", password)
+                    .putBoolean(KEY_DEFAULTS_V2, true)
+                    .apply()
+            }
+
             return FtpSettings(
-                port = p.getInt("port", DEFAULT_PORT).coerceIn(1024, 65535),
-                username = p.getString("username", DEFAULT_USERNAME)?.takeIf { it.isNotBlank() }
-                    ?: DEFAULT_USERNAME,
-                password = p.getString("password", DEFAULT_PASSWORD) ?: DEFAULT_PASSWORD,
+                port = port,
+                username = username,
+                password = password,
                 allowAnonymous = p.getBoolean("allow_anonymous", false),
                 autoStart = p.getBoolean("auto_start", true),
                 rootPath = p.getString("root_path", "") ?: ""

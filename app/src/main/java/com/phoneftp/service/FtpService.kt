@@ -146,9 +146,19 @@ class FtpService : Service() {
     private fun onNetworkChanged(reason: String) {
         android.util.Log.i(FtpServer.TAG, "Network changed ($reason) — ensuring FTP server is up")
         // Give the interface a moment to actually get its IP address.
+        // This covers: joining a new Wi-Fi, switching Wi-Fi, and turning the
+        // phone's own hotspot (point d'accès mobile) ON or OFF. The server
+        // binds 0.0.0.0, so it stays on the SAME configured port (default
+        // 9999) on every interface — clients just use the phone's new IP.
+        // Two retries: a hotspot interface can take a few seconds to get
+        // its address (typically 192.168.43.x on Samsung).
         mainHandler.postDelayed({
             if (shouldAutoRun()) ensureServerRunning() else updateNotification()
         }, 800)
+        mainHandler.postDelayed({
+            if (shouldAutoRun()) ensureServerRunning() else updateNotification()
+        }, 3_000)
+        mainHandler.postDelayed({ updateNotification() }, 6_000)
     }
 
     private fun registerNetworkWatchers() {
@@ -164,6 +174,7 @@ class FtpService : Service() {
         val filter = IntentFilter().apply {
             addAction(WifiManager.WIFI_STATE_CHANGED_ACTION)
             addAction("android.net.wifi.WIFI_AP_STATE_CHANGED")
+            addAction("android.net.conn.TETHER_STATE_CHANGED")
             addAction(WifiManager.NETWORK_STATE_CHANGED_ACTION)
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
