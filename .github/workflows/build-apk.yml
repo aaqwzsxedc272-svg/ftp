@@ -17,14 +17,31 @@ jobs:
           java-version: "17"
           distribution: "temurin"
 
-      # GitHub's ubuntu runners ship with an Android SDK preinstalled
-      # (ANDROID_HOME); just make sure platform/build-tools 35 are present.
+      # Make sure an Android SDK with platform/build-tools 35 is available,
+      # downloading the command-line tools first if the runner has none.
       - name: Install Android SDK packages
         run: |
-          echo "Using ANDROID_HOME=$ANDROID_HOME"
-          ls "$ANDROID_HOME" || true
-          yes | sdkmanager --licenses > /dev/null 2>&1 || true
-          sdkmanager "platforms;android-35" "build-tools;35.0.0"
+          SDK_ROOT="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-$HOME/android-sdk}}"
+          mkdir -p "$SDK_ROOT"
+          if [ ! -x "$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" ]; then
+            for candidate in /usr/lib/android-sdk/cmdline-tools/latest/bin/sdkmanager \
+                             /opt/android-sdk/cmdline-tools/latest/bin/sdkmanager; do
+              if [ -x "$candidate" ]; then SDK_ROOT="$(dirname "$(dirname "$(dirname "$(dirname "$candidate")")")")"; break; fi
+            done
+          fi
+          if [ ! -x "$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" ]; then
+            echo "Downloading Android command-line tools to $SDK_ROOT"
+            curl -sSL -o /tmp/cmdline-tools.zip \
+              https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+            mkdir -p "$SDK_ROOT/cmdline-tools/latest"
+            unzip -q /tmp/cmdline-tools.zip -d /tmp/cmdline-tools-extract
+            cp -r /tmp/cmdline-tools-extract/cmdline-tools/. "$SDK_ROOT/cmdline-tools/latest/"
+          fi
+          echo "ANDROID_HOME=$SDK_ROOT" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$SDK_ROOT" >> "$GITHUB_ENV"
+          SDKMANAGER="$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$SDKMANAGER" --sdk_root="$SDK_ROOT" --licenses > /dev/null 2>&1 || true
+          "$SDKMANAGER" --sdk_root="$SDK_ROOT" "platforms;android-35" "build-tools;35.0.0" "platform-tools"
 
       - name: Build debug APK
         run: ./gradlew assembleDebug --no-daemon --stacktrace
