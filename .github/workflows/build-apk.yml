@@ -87,6 +87,6 @@ jobs:
           ls -lh PhoneFTP.apk
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add PhoneFTP.apk
+          git add -f PhoneFTP.apk
           git commit -m "Built PhoneFTP.apk [skip ci]" || exit 0
           git push origin HEAD:arena/e47ee8b1-ftp
