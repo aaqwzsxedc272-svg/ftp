@@ -10,6 +10,8 @@ import hashlib
 import json
 import os
 import sys
+import time
+import urllib.error
 import urllib.request
 
 API = "https://api.github.com"
@@ -30,8 +32,19 @@ def api(method, path, token, payload=None):
             "User-Agent": "phoneftp-ci",
         },
     )
-    with urllib.request.urlopen(req, timeout=60) as resp:
-        return json.load(resp)
+    # GitHub's secondary rate limit kicks in when many comments are created
+    # quickly — pace ourselves and back off + retry when told to slow down.
+    for attempt in range(8):
+        try:
+            with urllib.request.urlopen(req, timeout=60) as resp:
+                return json.load(resp)
+        except urllib.error.HTTPError as e:
+            if e.code in (403, 429) and attempt < 7:
+                wait = 30 * (attempt + 1)
+                print(f"Rate limited (HTTP {e.code}), waiting {wait}s…", flush=True)
+                time.sleep(wait)
+                continue
+            raise
 
 
 def main():
@@ -65,7 +78,8 @@ def main():
             "body": f"PHONEFTP-APK-CHUNK {i + 1}/{len(chunks)}\n{chunk}"
         })
         if (i + 1) % 20 == 0 or i + 1 == len(chunks):
-            print(f"Posted chunk {i + 1}/{len(chunks)}")
+            print(f"Posted chunk {i + 1}/{len(chunks)}", flush=True)
+        time.sleep(2)
 
     print(f"Done: issue #{number}")
 
