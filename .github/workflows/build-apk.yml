@@ -81,14 +81,17 @@ jobs:
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
 
-      # Deliver the APK through a GitHub issue (base64 chunks via the API):
-      # artifact downloads and git pushes are not reachable/writable from
-      # every environment, but the API is.
-      - name: Deliver APK via issue
+      # Deliver the APK as a GitHub Release asset so it has a direct
+      # download link. (Re-runs replace the asset via --clobber.)
+      - name: Deliver APK to release
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           cp app/build/outputs/apk/debug/app-debug.apk PhoneFTP.apk
           ls -lh PhoneFTP.apk
-          python3 scripts/deliver_apk_via_issue.py PhoneFTP.apk
+          gh release upload v0.1.0 PhoneFTP.apk --clobber || \
+            gh release create v0.1.0 PhoneFTP.apk \
+              --title "PhoneFTP v0.1.0" \
+              --notes "Always-on FTP server for Android. Download PhoneFTP.apk, allow 'Install unknown apps', then set your username/password and pick the shared folder in the app. Default port 2121."
+          gh release view v0.1.0
