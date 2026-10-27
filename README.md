@@ -34,6 +34,22 @@ on your phone over your local network.
   otherwise the app-private folder on external storage. You can also type a
   custom folder path in the app.
 
+## Target device (current setup)
+
+- **Samsung SM-A127F** (Galaxy A12 family), **Android 13**, One UI Core 5.1,
+  Knox 3.9, security patch 2024-10-01.
+- Current Wi-Fi address seen: `192.168.1.38` → once installed, the server will
+  be at **`ftp://192.168.1.38:2121`** on that network (address changes with the
+  network; the app/notification always shows the current one).
+- The app UI automatically switches to **French** on this phone and shows
+  Samsung-specific keep-alive steps on Samsung devices.
+- **Samsung setup for true 24/7 running (important on One UI):**
+  1. Settings → Apps → PhoneFTP → **Battery → Unrestricted**
+  2. Settings → Battery → Background usage limits → **Never sleeping apps →
+     add PhoneFTP**
+  3. Lock PhoneFTP in Recents (⋮ → Lock this app)
+  4. In the app: grant *All files access* + *Ignore battery optimizations*
+
 ## Build & install
 
 1. Install **Android Studio** (it brings the JDK + Android SDK).

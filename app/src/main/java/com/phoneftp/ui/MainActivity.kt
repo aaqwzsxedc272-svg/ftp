@@ -77,6 +77,31 @@ class MainActivity : AppCompatActivity() {
             if (FtpService.isRunning) FtpService.restart(this)
             toast(getString(R.string.settings_saved))
         }
+        // Device line (helps support: e.g. "samsung SM-A127F • Android 13").
+        findViewById<TextView>(R.id.deviceText).text = getString(
+            R.string.device_info,
+            "${Build.MANUFACTURER} ${Build.MODEL}",
+            Build.VERSION.RELEASE
+        )
+
+        // Samsung (One UI) kills background apps harder than stock Android:
+        // show the extra "never sleeping / unrestricted battery" steps only there.
+        val isSamsung = Build.MANUFACTURER.equals("samsung", ignoreCase = true)
+        if (isSamsung) {
+            findViewById<TextView>(R.id.samsungText).visibility = android.view.View.VISIBLE
+            val appSettingsButton = findViewById<Button>(R.id.appSettingsButton)
+            appSettingsButton.visibility = android.view.View.VISIBLE
+            appSettingsButton.setOnClickListener {
+                // App info page → from there: Battery → Unrestricted.
+                startActivity(
+                    Intent(
+                        Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                        Uri.parse("package:$packageName")
+                    )
+                )
+            }
+        }
+
         findViewById<Button>(R.id.storagePermissionButton).setOnClickListener { requestAllFilesAccess() }
         findViewById<Button>(R.id.batteryButton).setOnClickListener { requestIgnoreBatteryOptimizations() }
 
