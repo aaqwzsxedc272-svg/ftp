@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">PhoneFTP</string>
+
+    <string name="status_running">● Running on port %1$d</string>
+    <string name="status_stopped">○ Stopped</string>
+    <string name="connect_with">Connect from another device with:</string>
+    <string name="no_network">No network yet — connect to Wi-Fi or turn on your hotspot, the server will be reachable automatically.</string>
+    <string name="serving_folder">Serving folder: %1$s</string>
+
+    <string name="start">Start</string>
+    <string name="stop">Stop</string>
+    <string name="starting">Starting FTP server…</string>
+    <string name="stopped">FTP server stopped</string>
+    <string name="settings_saved">Settings saved</string>
+
+    <string name="settings">Settings</string>
+    <string name="port">Port</string>
+    <string name="username">Username</string>
+    <string name="password">Password</string>
+    <string name="root_folder_hint">Served folder (empty = automatic: whole storage if access granted, otherwise app folder)</string>
+    <string name="allow_anonymous">Allow anonymous login (no password!)</string>
+    <string name="auto_start">Start automatically (after reboot, network changes, hotspot on/off)</string>
+    <string name="save_and_apply">Save &amp; apply</string>
+
+    <string name="keep_alive">Keep it running permanently</string>
+    <string name="keep_alive_explanation">For a truly always-on server: 1) grant “All files access” so the whole phone storage can be served, 2) allow ignoring battery optimizations, and 3) on some brands (Xiaomi, Samsung, Oppo…) also set this app to “No restrictions” / lock it in Recents so the system does not kill it.</string>
+    <string name="grant_storage">Grant all-files access</string>
+    <string name="storage_already_granted">All-files access already granted</string>
+    <string name="grant_battery">Ignore battery optimizations</string>
+    <string name="battery_already_granted">Battery optimization already ignored for this app</string>
+
+    <string name="notification_channel">FTP server</string>
+    <string name="notification_channel_desc">Shows while the FTP server is running</string>
+    <string name="notification_title">PhoneFTP is running</string>
+    <string name="notification_waiting_network">Running — waiting for Wi-Fi / hotspot…</string>
+    <string name="notification_starting">Starting…</string>
+</resources>

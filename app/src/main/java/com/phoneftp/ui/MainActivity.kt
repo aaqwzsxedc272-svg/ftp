@@ -1,0 +1,180 @@
+package com.phoneftp.ui
+
+import android.Manifest
+import android.content.Intent
+import android.net.Uri
+import android.os.Build
+import android.os.Bundle
+import android.os.Environment
+import android.os.Handler
+import android.os.Looper
+import android.os.PowerManager
+import android.provider.Settings
+import android.widget.Button
+import android.widget.CheckBox
+import android.widget.EditText
+import android.widget.TextView
+import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
+import com.phoneftp.FtpSettings
+import com.phoneftp.R
+import com.phoneftp.ftp.LocalIp
+import com.phoneftp.service.FtpService
+
+class MainActivity : AppCompatActivity() {
+
+    private val handler = Handler(Looper.getMainLooper())
+    private lateinit var statusText: TextView
+    private lateinit var addressesText: TextView
+    private lateinit var rootText: TextView
+    private lateinit var portInput: EditText
+    private lateinit var usernameInput: EditText
+    private lateinit var passwordInput: EditText
+    private lateinit var rootInput: EditText
+    private lateinit var anonymousCheck: CheckBox
+    private lateinit var autoStartCheck: CheckBox
+
+    private val refreshStatus = object : Runnable {
+        override fun run() {
+            renderStatus()
+            handler.postDelayed(this, 1_500)
+        }
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
+
+        statusText = findViewById(R.id.statusText)
+        addressesText = findViewById(R.id.addressesText)
+        rootText = findViewById(R.id.rootText)
+        portInput = findViewById(R.id.portInput)
+        usernameInput = findViewById(R.id.usernameInput)
+        passwordInput = findViewById(R.id.passwordInput)
+        rootInput = findViewById(R.id.rootInput)
+        anonymousCheck = findViewById(R.id.anonymousCheck)
+        autoStartCheck = findViewById(R.id.autoStartCheck)
+
+        val settings = FtpSettings.load(this)
+        portInput.setText(settings.port.toString())
+        usernameInput.setText(settings.username)
+        passwordInput.setText(settings.password)
+        rootInput.setText(settings.rootPath)
+        anonymousCheck.isChecked = settings.allowAnonymous
+        autoStartCheck.isChecked = settings.autoStart
+
+        findViewById<Button>(R.id.startButton).setOnClickListener {
+            saveSettingsFromUi()
+            FtpService.start(this)
+            toast(getString(R.string.starting))
+        }
+        findViewById<Button>(R.id.stopButton).setOnClickListener {
+            FtpService.stop(this)
+            toast(getString(R.string.stopped))
+        }
+        findViewById<Button>(R.id.saveButton).setOnClickListener {
+            saveSettingsFromUi()
+            if (FtpService.isRunning) FtpService.restart(this)
+            toast(getString(R.string.settings_saved))
+        }
+        findViewById<Button>(R.id.storagePermissionButton).setOnClickListener { requestAllFilesAccess() }
+        findViewById<Button>(R.id.batteryButton).setOnClickListener { requestIgnoreBatteryOptimizations() }
+
+        requestNotificationPermission()
+
+        // Opening the app = server should be up (unless the user turned auto-start off).
+        if (settings.autoStart) FtpService.start(this)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        handler.post(refreshStatus)
+    }
+
+    override fun onPause() {
+        handler.removeCallbacks(refreshStatus)
+        super.onPause()
+    }
+
+    private fun renderStatus() {
+        val settings = FtpSettings.load(this)
+        statusText.text = if (FtpService.isRunning) {
+            getString(R.string.status_running, settings.port)
+        } else {
+            getString(R.string.status_stopped)
+        }
+        val ips = LocalIp.getLocalIpAddresses()
+        addressesText.text = if (ips.isEmpty()) {
+            getString(R.string.no_network)
+        } else {
+            ips.joinToString("\n") { "ftp://$it:${settings.port}" }
+        }
+        rootText.text = getString(R.string.serving_folder, settings.resolveRoot(this).absolutePath)
+    }
+
+    private fun saveSettingsFromUi() {
+        val current = FtpSettings.load(this)
+        val port = portInput.text.toString().toIntOrNull()
+            ?.coerceIn(1024, 65535) ?: FtpSettings.DEFAULT_PORT
+        FtpSettings.save(
+            this,
+            current.copy(
+                port = port,
+                username = usernameInput.text.toString().trim()
+                    .ifEmpty { FtpSettings.DEFAULT_USERNAME },
+                password = passwordInput.text.toString()
+                    .ifEmpty { FtpSettings.DEFAULT_PASSWORD },
+                rootPath = rootInput.text.toString().trim(),
+                allowAnonymous = anonymousCheck.isChecked,
+                autoStart = autoStartCheck.isChecked
+            )
+        )
+    }
+
+    // ------------------------------------------------------------ permissions
+
+    private fun requestNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 10)
+        }
+    }
+
+    private fun requestAllFilesAccess() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R &&
+            !Environment.isExternalStorageManager()
+        ) {
+            try {
+                startActivity(
+                    Intent(
+                        Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION,
+                        Uri.parse("package:$packageName")
+                    )
+                )
+            } catch (_: Exception) {
+                startActivity(Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION))
+            }
+        } else {
+            toast(getString(R.string.storage_already_granted))
+        }
+    }
+
+    private fun requestIgnoreBatteryOptimizations() {
+        val pm = getSystemService(PowerManager::class.java)
+        if (pm?.isIgnoringBatteryOptimizations(packageName) == true) {
+            toast(getString(R.string.battery_already_granted))
+            return
+        }
+        try {
+            startActivity(
+                Intent(
+                    Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
+                    Uri.parse("package:$packageName")
+                )
+            )
+        } catch (_: Exception) {
+            startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
+        }
+    }
+
+    private fun toast(message: String) = Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+}
