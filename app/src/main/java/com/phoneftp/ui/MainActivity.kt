@@ -34,6 +34,56 @@ class MainActivity : AppCompatActivity() {
     private lateinit var anonymousCheck: CheckBox
     private lateinit var autoStartCheck: CheckBox
 
+    /** Folder picker (system file picker, "use this folder"). */
+    private val folderPickerLauncher =
+        registerForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
+            if (uri == null) return@registerForActivityResult
+            try {
+                contentResolver.takePersistableUriPermission(
+                    uri,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                )
+            } catch (_: Exception) { /* raw-path access below may still work */ }
+
+            val path = localPathFromTreeUri(uri)
+            if (path == null) {
+                toast(getString(R.string.folder_pick_failed))
+                return@registerForActivityResult
+            }
+            rootInput.setText(path)
+            saveSettingsFromUi()
+            if (FtpService.isRunning) FtpService.restart(this)
+            toast(getString(R.string.folder_picked, path))
+        }
+
+    /**
+     * Converts a picked folder (SAF tree URI) to a real filesystem path, which is
+     * what the FTP server serves. Handles internal storage ("primary"), SD cards
+     * (volume id) and the Documents folder ("home"). Returns null for cloud or
+     * other non-local providers, which cannot be served as plain files.
+     */
+    private fun localPathFromTreeUri(uri: Uri): String? {
+        return try {
+            if (!DocumentsContract.isTreeUri(uri)) return null
+            val docId = DocumentsContract.getTreeDocumentId(uri)
+            val separator = docId.indexOf(':')
+            if (separator < 0) return null
+            val volume = docId.substring(0, separator)
+            val relative = docId.substring(separator + 1)
+            val base = when {
+                volume.equals("primary", ignoreCase = true) ->
+                    Environment.getExternalStorageDirectory()
+                volume.equals("home", ignoreCase = true) ->
+                    Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS)
+                else -> File("/storage/$volume")
+            }
+            val folder = if (relative.isEmpty()) base else File(base, relative)
+            folder.absolutePath
+        } catch (_: Exception) {
+            null
+        }
+    }
+
     private val refreshStatus = object : Runnable {
         override fun run() {
             renderStatus()

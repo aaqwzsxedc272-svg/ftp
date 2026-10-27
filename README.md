@@ -41,8 +41,10 @@ on your phone over your local network.
 - Current Wi-Fi address seen: `192.168.1.38` → once installed, the server will
   be at **`ftp://192.168.1.38:2121`** on that network (address changes with the
   network; the app/notification always shows the current one).
-- The app UI automatically switches to **French** on this phone and shows
-  Samsung-specific keep-alive steps on Samsung devices.
+- The app UI is in **English** and shows Samsung-specific keep-alive steps
+  on Samsung devices. The shared folder is chosen in the app with the
+  **“Pick shared folder”** button (system folder picker), and the FTP
+  username/password are set in the app's Settings section.
 - **Samsung setup for true 24/7 running (important on One UI):**
   1. Settings → Apps → PhoneFTP → **Battery → Unrestricted**
   2. Settings → Battery → Background usage limits → **Never sleeping apps →
