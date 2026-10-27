@@ -18,10 +18,12 @@
     <string name="port">Port</string>
     <string name="username">Username</string>
     <string name="password">Password</string>
-    <string name="root_folder_hint">Shared folder — everything inside it, including all subfolders and files, can be read and copied (empty = automatic)</string>
+    <string name="root_folder_hint">Shared folder — by default the main phone storage; everything inside it, including all subfolders and files, can be read and copied</string>
     <string name="allow_anonymous">Allow anonymous login (no password!)</string>
     <string name="auto_start">Start automatically (after reboot, network changes, hotspot on/off)</string>
-    <string name="pick_folder">Pick shared folder</string>
+    <string name="share_main_folder">Share the main folder (whole phone storage)</string>
+    <string name="main_folder_set">Main folder shared: %1$s — everything inside it (DCIM, Download, Documents, all folders and files) can now be read and copied.</string>
+    <string name="pick_folder">Or pick a specific folder…</string>
     <string name="folder_picked">Shared folder set to: %1$s</string>
     <string name="folder_pick_failed">Could not use that folder. Please pick a folder on this phone\'s storage (not a cloud folder), and grant all-files access if asked.</string>
     <string name="folder_needs_access">Folder saved: %1$s — now grant all-files access so the server can read it and everything inside it.</string>

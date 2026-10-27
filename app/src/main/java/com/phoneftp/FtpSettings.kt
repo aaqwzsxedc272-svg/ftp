@@ -17,8 +17,14 @@ data class FtpSettings(
     fun resolveRoot(context: Context): File {
         val root = when {
             rootPath.isNotBlank() -> File(rootPath)
-            isAllFilesAccessGranted() -> Environment.getExternalStorageDirectory()
-            else -> context.getExternalFilesDir(null) ?: context.filesDir
+            // Default: share the phone's MAIN storage folder — the one that
+            // opens when you open the Files app (/storage/emulated/0), with
+            // all its folders (DCIM, Download, Documents, ...) and files.
+            // Needs "All files access" to be readable on Android 11+; the UI
+            // prompts for it.
+            else -> Environment.getExternalStorageDirectory()
+                ?: context.getExternalFilesDir(null)
+                ?: context.filesDir
         }
         if (!root.exists()) root.mkdirs()
         return root

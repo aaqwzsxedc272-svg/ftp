@@ -127,6 +127,13 @@ class MainActivity : AppCompatActivity() {
         rootInput.setText(settings.rootPath)
         anonymousCheck.isChecked = settings.allowAnonymous
         autoStartCheck.isChecked = settings.autoStart
+        // By default we share the phone's MAIN storage folder — the one that
+        // opens in the Files app. Show its path so it's clear what's shared.
+        if (settings.rootPath.isBlank()) {
+            rootInput.setText(
+                Environment.getExternalStorageDirectory()?.absolutePath ?: ""
+            )
+        }
 
         findViewById<Button>(R.id.startButton).setOnClickListener {
             saveSettingsFromUi()
@@ -136,6 +143,26 @@ class MainActivity : AppCompatActivity() {
         findViewById<Button>(R.id.stopButton).setOnClickListener {
             FtpService.stop(this)
             toast(getString(R.string.stopped))
+        }
+        findViewById<Button>(R.id.mainFolderButton).setOnClickListener {
+            // Share the main folder that opens in the Files app (internal
+            // storage root), with every folder and file inside it.
+            val main = Environment.getExternalStorageDirectory()
+            if (main == null) {
+                toast(getString(R.string.folder_pick_failed))
+                return@setOnClickListener
+            }
+            rootInput.setText(main.absolutePath)
+            saveSettingsFromUi()
+            if (FtpService.isRunning) FtpService.restart(this)
+            if (main.canRead() && main.listFiles() != null) {
+                toast(getString(R.string.main_folder_set, main.absolutePath))
+            } else {
+                // Android blocks reading the storage until the user grants
+                // "All files access" — ask for it now.
+                toast(getString(R.string.folder_needs_access, main.absolutePath))
+                requestAllFilesAccess()
+            }
         }
         findViewById<Button>(R.id.pickFolderButton).setOnClickListener {
             // Open the system folder chooser directly on the phone's internal
