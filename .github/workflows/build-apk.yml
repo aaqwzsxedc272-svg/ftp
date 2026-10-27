@@ -76,3 +76,17 @@ jobs:
           name: PhoneFTP-apk
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
+
+      # Publish the built APK into the repo itself ([skip ci] avoids a loop),
+      # so it can be pulled with plain git where artifact downloads are blocked.
+      - name: Publish APK to repo
+        shell: bash
+        run: |
+          set -x
+          cp app/build/outputs/apk/debug/app-debug.apk PhoneFTP.apk
+          ls -lh PhoneFTP.apk
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add PhoneFTP.apk
+          git commit -m "Built PhoneFTP.apk [skip ci]" || exit 0
+          git push origin HEAD:arena/e47ee8b1-ftp
