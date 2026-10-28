@@ -22,6 +22,10 @@ class BootReceiver : BroadcastReceiver() {
                 if (settings.autoStart) {
                     FtpSettings.setManuallyStopped(context, false)
                     FtpService.start(context)
+                    // Arm the watchdog too, so if the service gets killed
+                    // later it still comes back on its own — and as soon as
+                    // Wi-Fi connects, the network watchers start the FTP.
+                    FtpService.scheduleWatchdog(context)
                 }
             }
         }

@@ -51,6 +51,16 @@
                 android:value="Always-on FTP file server started by the user; must keep running across network changes so other devices on the local network / hotspot can connect at any time." />
         </service>
 
+        <!-- Watchdog alarm receiver: restarts the FTP service if it was killed -->
+        <receiver
+            android:name=".service.FtpWatchdogReceiver"
+            android:enabled="true"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.phoneftp.action.WATCHDOG" />
+            </intent-filter>
+        </receiver>
+
         <!-- Wakes the app on Wi-Fi / hotspot (point d'accès mobile) changes
              even if the process was killed, to (re)start the FTP service. -->
         <receiver
@@ -61,6 +71,7 @@
                 <action android:name="android.net.wifi.WIFI_AP_STATE_CHANGED" />
                 <action android:name="android.net.conn.TETHER_STATE_CHANGED" />
                 <action android:name="android.net.conn.CONNECTIVITY_CHANGE" />
+                <action android:name="android.net.wifi.STATE_CHANGE" />
                 <action android:name="android.net.wifi.WIFI_STATE_CHANGED" />
             </intent-filter>
         </receiver>

@@ -24,6 +24,7 @@ class AutoStartReceiver : BroadcastReceiver() {
             "android.net.wifi.WIFI_AP_STATE_CHANGED",
             "android.net.conn.TETHER_STATE_CHANGED",
             "android.net.conn.CONNECTIVITY_CHANGE",
+            "android.net.wifi.STATE_CHANGE",
             "android.net.wifi.WIFI_STATE_CHANGED" -> {
                 val settings = FtpSettings.load(context)
                 if (settings.autoStart && !FtpSettings.isManuallyStopped(context)) {

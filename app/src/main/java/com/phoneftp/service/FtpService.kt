@@ -75,6 +75,7 @@ class FtpService : Service() {
         startForegroundWithNotification()
         acquireLocks()
         registerNetworkWatchers()
+        scheduleWatchdog(this)
         ensureServerRunning()
     }
 
@@ -296,6 +297,8 @@ class FtpService : Service() {
         const val ACTION_START = "com.phoneftp.action.START"
         const val ACTION_STOP = "com.phoneftp.action.STOP"
         const val ACTION_RESTART = "com.phoneftp.action.RESTART"
+        const val ACTION_WATCHDOG = "com.phoneftp.action.WATCHDOG"
+        private const val WATCHDOG_MS = 15 * 60_000L
 
         private const val CHANNEL_ID = "phone_ftp_server"
         private const val NOTIFICATION_ID = 1001
@@ -323,6 +326,25 @@ class FtpService : Service() {
             ContextCompat.startForegroundService(
                 context, Intent(context, FtpService::class.java).setAction(ACTION_RESTART)
             )
+        }
+
+        /**
+         * Arms (or re-arms) the 15-minute watchdog alarm — see
+         * [FtpWatchdogReceiver]. Same PendingIntent each time, so there is
+         * always exactly one watchdog scheduled.
+         */
+        fun scheduleWatchdog(context: Context) {
+            try {
+                val intent = PendingIntent.getBroadcast(
+                    context, 45,
+                    Intent(context, FtpWatchdogReceiver::class.java).setAction(ACTION_WATCHDOG),
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                )
+                context.getSystemService(AlarmManager::class.java)
+                    ?.setAndAllowWhileIdle(
+                        AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + WATCHDOG_MS, intent
+                    )
+            } catch (_: Exception) {}
         }
     }
 }

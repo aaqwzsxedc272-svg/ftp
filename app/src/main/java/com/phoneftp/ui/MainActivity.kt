@@ -214,7 +214,10 @@ class MainActivity : AppCompatActivity() {
         requestNotificationPermission()
 
         // Opening the app = server should be up (unless the user turned auto-start off).
-        if (settings.autoStart) FtpService.start(this)
+        if (settings.autoStart) {
+            FtpService.start(this)
+            FtpService.scheduleWatchdog(this)
+        }
     }
 
     override fun onResume() {
