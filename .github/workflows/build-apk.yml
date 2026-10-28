@@ -81,17 +81,25 @@ jobs:
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
 
-      # Deliver the APK as a GitHub Release asset so it has a direct
-      # download link. (Re-runs replace the asset via --clobber.)
-      - name: Deliver APK to release
+      - name: Upload BT Auto Connect APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: BTAutoConnect-apk
+          path: btapp/build/outputs/apk/debug/btapp-debug.apk
+          if-no-files-found: error
+
+      # Deliver both APKs as GitHub Release assets so they have direct
+      # download links. (Re-runs replace the assets via --clobber.)
+      - name: Deliver APKs to release
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           cp app/build/outputs/apk/debug/app-debug.apk PhoneFTP.apk
-          ls -lh PhoneFTP.apk
-          gh release upload v0.2.1 PhoneFTP.apk --clobber || \
-            gh release create v0.2.1 PhoneFTP.apk \
-              --title "PhoneFTP v0.2.1" \
-              --notes "Always-on FTP server for Android. Download PhoneFTP.apk, allow 'Install unknown apps', then set your username/password and pick the shared folder in the app. Default port 9999, username and password: mou."
-          gh release view v0.2.1
+          cp btapp/build/outputs/apk/debug/btapp-debug.apk BTAutoConnect.apk
+          ls -lh PhoneFTP.apk BTAutoConnect.apk
+          gh release upload v0.3.0 PhoneFTP.apk BTAutoConnect.apk --clobber || \
+            gh release create v0.3.0 PhoneFTP.apk BTAutoConnect.apk \
+              --title "PhoneFTP v0.2.1 + BT Auto Connect v0.1.0" \
+              --notes "Two apps: 1) PhoneFTP.apk - always-on FTP server (default port 9999, username/password: mou). 2) BTAutoConnect.apk - auto-connects your Roseland TWS RE-500 / itel T1Neo / MusicMan BT-X78 when Bluetooth turns on, one device at a time (devices must be paired once first). Download an APK, allow 'Install unknown apps', and install it."
+          gh release view v0.3.0

@@ -14,3 +14,4 @@ dependencyResolutionManagement {
 }
 rootProject.name = "PhoneFTP"
 include(":app")
+include(":btapp")

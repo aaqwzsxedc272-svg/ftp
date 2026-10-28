@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">BT Auto Connect</string>
+
+    <string name="your_devices">My devices (priority order)</string>
+    <string name="your_devices_hint">When Bluetooth is on, the app searches for these and connects to the first one it finds — only one device at a time, in this order. Tick/untick to include or skip a device.</string>
+    <string name="connect_now">Connect now</string>
+    <string name="start_service">Start auto-connect</string>
+    <string name="stop_service">Stop</string>
+    <string name="stop">Stop</string>
+    <string name="pair_devices">Pair a device (Bluetooth settings)</string>
+    <string name="ignore_battery">Ignore battery optimizations (stay alive)</string>
+    <string name="service_started">Auto-connect started</string>
+    <string name="service_stopped">Auto-connect stopped</string>
+
+    <string name="how_it_works">How it works:\n• Your devices must be paired with the phone once (use the Pair button above).\n• After that, whenever Bluetooth turns on, the app searches and auto-connects: Roseland TWS RE-500 first, then itel T1Neo, then MusicMan BT-X78.\n• Only one device is connected at a time. If your device disconnects, the app searches and reconnects automatically.\n• For Samsung: set this app\'s battery to Unrestricted / Never sleeping apps so it stays alive.</string>
+
+    <string name="bluetooth_on">Bluetooth is ON</string>
+    <string name="bluetooth_off_hint">Bluetooth is OFF — turn it on and your device will connect automatically.</string>
+
+    <string name="status_starting">Starting…</string>
+    <string name="status_stopped">Stopped</string>
+    <string name="status_no_bluetooth">No Bluetooth on this phone</string>
+    <string name="status_bluetooth_on">Bluetooth on — searching for your devices…</string>
+    <string name="status_bluetooth_off">Bluetooth off — waiting…</string>
+    <string name="status_no_permission">Bluetooth permission needed — open the app and allow it</string>
+    <string name="status_searching">Searching for your devices…</string>
+    <string name="status_connecting">Connecting to %1$s…</string>
+    <string name="status_connected">Connected: %1$s</string>
+    <string name="status_other_connected">Connected (other device): %1$s — not connecting another one</string>
+    <string name="status_none_paired">None of your devices are paired yet — tap “Pair a device” in the app</string>
+    <string name="status_connect_failed">Could not connect to %1$s — make sure it is on and nearby, it will keep retrying</string>
+
+    <string name="notification_channel">Bluetooth auto-connect</string>
+    <string name="notification_channel_desc">Shows while BT Auto Connect is active</string>
+    <string name="notification_title">BT Auto Connect is active</string>
+</resources>
