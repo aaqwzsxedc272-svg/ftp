@@ -22,9 +22,12 @@ class BtBootReceiver : BroadcastReceiver() {
             }
             else -> false
         }
+        // Auto-launch at phone restart/power-on and when Bluetooth turns on.
+        BtAutoConnectService.ensureAlwaysRunningDefault(context)
         if (shouldStart && BtAutoConnectService.isAutoRunEnabled(context)) {
             try {
                 BtAutoConnectService.start(context)
+                BtAutoConnectService.scheduleWatchdog(context)
             } catch (_: Exception) {
                 // Foreground-service background-start limits on some versions;
                 // the service also restarts itself via alarm when running.

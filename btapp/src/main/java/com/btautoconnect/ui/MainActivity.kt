@@ -45,6 +45,21 @@ class MainActivity : AppCompatActivity() {
 
         buildTargetToggles()
 
+        // Always running: auto-launch after phone restart/power-on and when
+        // Bluetooth turns on. On by default (applied once by the service).
+        BtAutoConnectService.ensureAlwaysRunningDefault(this)
+        val autoStartCheck = findViewById<CheckBox>(R.id.autoStartCheck)
+        autoStartCheck.isChecked = BtAutoConnectService.isAutoRunEnabled(this)
+        autoStartCheck.setOnCheckedChangeListener { _, isChecked ->
+            BtAutoConnectService.setAutoRunEnabled(this, isChecked)
+            if (isChecked) {
+                ensurePermissionsThen {
+                    BtAutoConnectService.start(this)
+                    BtAutoConnectService.scheduleWatchdog(this)
+                }
+            }
+        }
+
         findViewById<Button>(R.id.connectNowButton).setOnClickListener {
             ensurePermissionsThen { BtAutoConnectService.connectNow(this) }
         }

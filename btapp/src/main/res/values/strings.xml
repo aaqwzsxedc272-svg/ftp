@@ -10,6 +10,7 @@
     <string name="stop">Stop</string>
     <string name="pair_devices">Pair a device (Bluetooth settings)</string>
     <string name="ignore_battery">Ignore battery optimizations (stay alive)</string>
+    <string name="always_running">Always running — auto-start at phone restart/power-on and when Bluetooth turns on</string>
     <string name="service_started">Auto-connect started</string>
     <string name="service_stopped">Auto-connect stopped</string>
 

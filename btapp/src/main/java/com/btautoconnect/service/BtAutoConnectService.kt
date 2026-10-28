@@ -124,6 +124,7 @@ class BtAutoConnectService : Service() {
         adapter = getSystemService(BluetoothManager::class.java)?.adapter
         registerEventReceivers()
         connectProfileProxies()
+        scheduleWatchdog(this)
         handler.post(ticker)
     }
 
@@ -452,6 +453,9 @@ class BtAutoConnectService : Service() {
         private const val NOTIFICATION_ID = 2001
         private const val PREFS = "bt_auto_connect_prefs"
         private const val KEY_AUTORUN = "auto_run"
+        private const val KEY_ALWAYS_RUNNING_V2 = "always_running_default_v2"
+        const val ACTION_WATCHDOG = "com.btautoconnect.action.WATCHDOG"
+        private const val WATCHDOG_MS = 15 * 60_000L
         private const val TICK_MS = 20_000L
         private const val SEEN_WINDOW_MS = 3 * 60_000L
         private const val CONNECT_COOLDOWN_MS = 25_000L
@@ -460,9 +464,46 @@ class BtAutoConnectService : Service() {
         @Volatile var connectedDeviceName: String? = null
         @Volatile var isServiceRunning: Boolean = false
 
+        /**
+         * One-time default for this version: always-running is ON (auto-start
+         * at phone restart/power-on and when Bluetooth turns on), even for
+         * installs where the old Stop button had turned auto-run off. After
+         * this default is applied once, the user's own toggle choice rules.
+         */
+        fun ensureAlwaysRunningDefault(context: Context) {
+            val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            if (!prefs.getBoolean(KEY_ALWAYS_RUNNING_V2, false)) {
+                prefs.edit()
+                    .putBoolean(KEY_AUTORUN, true)
+                    .putBoolean(KEY_ALWAYS_RUNNING_V2, true)
+                    .apply()
+            }
+        }
+
         fun isAutoRunEnabled(context: Context): Boolean =
             context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
                 .getBoolean(KEY_AUTORUN, true)
+
+        /**
+         * Watchdog: every 15 minutes an alarm wakes the app (via
+         * BtWatchdogReceiver) and restarts this service if it was killed —
+         * e.g. by Samsung's battery manager. Same PendingIntent each time,
+         * so there is always exactly one watchdog alarm scheduled.
+         */
+        fun scheduleWatchdog(context: Context) {
+            try {
+                val intent = PendingIntent.getBroadcast(
+                    context, 44,
+                    Intent(context, BtWatchdogReceiver::class.java).setAction(ACTION_WATCHDOG),
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                )
+                context.getSystemService(android.app.AlarmManager::class.java)
+                    ?.setAndAllowWhileIdle(
+                        android.app.AlarmManager.RTC_WAKEUP,
+                        System.currentTimeMillis() + WATCHDOG_MS, intent
+                    )
+            } catch (_: Exception) {}
+        }
 
         fun setAutoRunEnabled(context: Context, enabled: Boolean) {
             context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()

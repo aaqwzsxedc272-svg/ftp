@@ -98,8 +98,8 @@ jobs:
           cp app/build/outputs/apk/debug/app-debug.apk PhoneFTP.apk
           cp btapp/build/outputs/apk/debug/btapp-debug.apk BTAutoConnect.apk
           ls -lh PhoneFTP.apk BTAutoConnect.apk
-          gh release upload v0.3.0 PhoneFTP.apk BTAutoConnect.apk --clobber || \
-            gh release create v0.3.0 PhoneFTP.apk BTAutoConnect.apk \
-              --title "PhoneFTP v0.2.1 + BT Auto Connect v0.1.0" \
+          gh release upload v0.3.1 PhoneFTP.apk BTAutoConnect.apk --clobber || \
+            gh release create v0.3.1 PhoneFTP.apk BTAutoConnect.apk \
+              --title "PhoneFTP v0.2.1 + BT Auto Connect v0.1.1" \
               --notes "Two apps: 1) PhoneFTP.apk - always-on FTP server (default port 9999, username/password: mou). 2) BTAutoConnect.apk - auto-connects your Roseland TWS RE-500 / itel T1Neo / MusicMan BT-X78 when Bluetooth turns on, one device at a time (devices must be paired once first). Download an APK, allow 'Install unknown apps', and install it."
-          gh release view v0.3.0
+          gh release view v0.3.1

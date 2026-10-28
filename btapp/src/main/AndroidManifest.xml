@@ -47,6 +47,16 @@
             android:stopWithTask="false"
             android:foregroundServiceType="connectedDevice" />
 
+        <!-- Watchdog alarm receiver: restarts the service if it was killed -->
+        <receiver
+            android:name=".service.BtWatchdogReceiver"
+            android:enabled="true"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.btautoconnect.action.WATCHDOG" />
+            </intent-filter>
+        </receiver>
+
         <receiver
             android:name=".service.BtBootReceiver"
             android:enabled="true"
