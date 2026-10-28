@@ -11,12 +11,28 @@ android {
         applicationId = "com.btautoconnect"
         minSdk = 26
         targetSdk = 35
-        versionCode = 2
-        versionName = "0.1.1"
+        versionCode = 3
+        versionName = "0.1.2"
+    }
+
+    // Same stable signing key as PhoneFTP (see app/build.gradle.kts) so
+    // updates always install over the previous version.
+    signingConfigs {
+        create("stable") {
+            storeFile = rootProject.file("signing/phoneftp-signing.p12")
+            storePassword = "phoneftp"
+            keyAlias = "phoneftp"
+            keyPassword = "phoneftp"
+            storeType = "PKCS12"
+        }
     }
 
     buildTypes {
+        debug {
+            signingConfig = signingConfigs.getByName("stable")
+        }
         release {
+            signingConfig = signingConfigs.getByName("stable")
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
