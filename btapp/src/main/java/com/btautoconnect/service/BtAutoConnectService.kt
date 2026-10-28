@@ -97,12 +97,21 @@ class BtAutoConnectService : Service() {
         }
     }
 
-    private val profileListener = BluetoothProfile.ServiceListener { profile, proxy ->
-        when (profile) {
-            BluetoothProfile.A2DP -> a2dpProxy = proxy
-            BluetoothProfile.HEADSET -> headsetProxy = proxy
+    private val profileListener = object : BluetoothProfile.ServiceListener {
+        override fun onServiceConnected(profile: Int, proxy: BluetoothProfile) {
+            when (profile) {
+                BluetoothProfile.A2DP -> a2dpProxy = proxy
+                BluetoothProfile.HEADSET -> headsetProxy = proxy
+            }
+            evaluate()
         }
-        evaluate()
+
+        override fun onServiceDisconnected(profile: Int) {
+            when (profile) {
+                BluetoothProfile.A2DP -> a2dpProxy = null
+                BluetoothProfile.HEADSET -> headsetProxy = null
+            }
+        }
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
