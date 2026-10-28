@@ -56,6 +56,7 @@ class BtAutoConnectService : Service() {
     /** Bluetooth address -> last time (ms) a discovery scan saw it. */
     private val lastSeen = mutableMapOf<String, Long>()
     @Volatile private var lastConnectAttempt = 0L
+    @Volatile private var nextCandidateIndex = 0
     @Volatile private var stoppedByUser = false
 
     private val ticker = object : Runnable {
@@ -206,11 +207,14 @@ class BtAutoConnectService : Service() {
         }
         connectedDeviceName = null
 
-        // 2) Choose the best target: highest priority, preferring devices a
-        //    recent scan actually saw nearby.
+        // 2) Choose from the PAIRED target devices. Paired earbuds/headsets
+        //    are usually NOT visible to discovery scans (only in pairing
+        //    mode), so we must try connecting to paired devices directly —
+        //    scanning is only a bonus signal for priority.
         val bonded = bondedTargets()
         if (bonded.isEmpty()) {
             updateStatus(getString(R.string.status_none_paired))
+            logEvent("No paired target devices found — pair one in Bluetooth settings")
             startSearch()
             return
         }
@@ -218,19 +222,23 @@ class BtAutoConnectService : Service() {
         val seenRecently = bonded.filter { device ->
             synchronized(lastSeen) { now - (lastSeen[device.address] ?: 0L) < SEEN_WINDOW_MS }
         }
-        val candidates = (seenRecently + bonded).distinct()
 
-        // 3) Search first if we haven't seen anything lately; connect when a
-        //    scan finishes (evaluate() is called then) or immediately if a
-        //    target was already seen.
-        if (seenRecently.isEmpty() && now - lastConnectAttempt > CONNECT_COOLDOWN_MS) {
-            startSearch()
-        }
-        if (seenRecently.isNotEmpty() && now - lastConnectAttempt > CONNECT_COOLDOWN_MS) {
-            tryConnect(candidates.first())
-        } else if (seenRecently.isEmpty()) {
+        // 3) Connect! Prefer a device a scan recently saw; otherwise walk
+        //    through the paired devices in priority order, rotating on each
+        //    attempt so an unavailable #1 doesn't block #2/#3 forever.
+        if (now - lastConnectAttempt <= CONNECT_COOLDOWN_MS) {
             updateStatus(getString(R.string.status_searching))
+            return
         }
+        startSearch() // keep learning which devices are around
+        val candidate = if (seenRecently.isNotEmpty()) {
+            seenRecently.first()
+        } else {
+            val picked = bonded[nextCandidateIndex % bonded.size]
+            nextCandidateIndex = (bonded.indexOf(picked) + 1) % bonded.size
+            picked
+        }
+        tryConnect(candidate)
     }
 
     @SuppressLint("MissingPermission")
@@ -267,12 +275,31 @@ class BtAutoConnectService : Service() {
         lastConnectAttempt = System.currentTimeMillis()
         val name = safeName(device) ?: device.address
         Log.i(TAG, "Trying to connect: $name")
+        logEvent("Trying to connect to $name…")
         updateStatus(getString(R.string.status_connecting, name))
         stopDiscovery()
+        if (a2dpProxy == null && headsetProxy == null) {
+            logEvent("Bluetooth profile service not ready yet — retrying shortly")
+            connectProfileProxies()
+            handler.postDelayed({ evaluate() }, 3_000)
+            return
+        }
         // Connect A2DP (music) and Headset (calls) — same single device.
         var requested = false
         for (proxy in listOfNotNull(a2dpProxy, headsetProxy)) {
-            if (connectViaReflection(proxy, device)) requested = true
+            val profileName = if (proxy === a2dpProxy) "A2DP" else "Headset"
+            if (connectViaReflection(proxy, device)) {
+                requested = true
+                logEvent("$profileName connect requested for $name")
+            } else {
+                logEvent("$profileName connect was refused for $name")
+            }
+        }
+        // Fallback used by many devices/firmwares: ask the device itself to
+        // connect all its profiles.
+        if (!requested && connectAllProfiles(device)) {
+            requested = true
+            logEvent("connectAllProfiles requested for $name")
         }
         if (!requested) {
             updateStatus(getString(R.string.status_connect_failed, name))
@@ -283,14 +310,35 @@ class BtAutoConnectService : Service() {
     /**
      * BluetoothA2dp.connect() / BluetoothHeadset.connect() are hidden system
      * APIs — reflection is the standard way apps trigger a profile connection
-     * to an already-paired device.
+     * to an already-paired device. Searches the proxy's class and interfaces
+     * so it also works on firmwares where the method sits on a superclass.
      */
     private fun connectViaReflection(proxy: BluetoothProfile, device: BluetoothDevice): Boolean {
         return try {
-            val method = proxy.javaClass.getMethod("connect", BluetoothDevice::class.java)
+            val method = proxy.javaClass.methods.firstOrNull { m ->
+                m.name == "connect" && m.parameterTypes.contentEquals(
+                    arrayOf(BluetoothDevice::class.java)
+                )
+            } ?: proxy.javaClass.getMethod("connect", BluetoothDevice::class.java)
+            method.isAccessible = true
             method.invoke(proxy, device) as? Boolean ?: true
         } catch (e: Exception) {
-            Log.w(TAG, "connect reflection failed for ${proxy.javaClass.simpleName}: ${e.message}")
+            Log.w(TAG, "connect reflection failed for ${proxy.javaClass.simpleName}: ${e.cause?.message ?: e.message}")
+            logEvent("connect method failed: ${e.cause?.javaClass?.simpleName ?: e.javaClass.simpleName}")
+            false
+        }
+    }
+
+    /** Hidden BluetoothDevice.connectAllProfiles() — fallback connect path. */
+    private fun connectAllProfiles(device: BluetoothDevice): Boolean {
+        return try {
+            val method = device.javaClass.methods.firstOrNull { it.name == "connectAllProfiles" }
+                ?: return false
+            method.isAccessible = true
+            method.invoke(device)
+            true
+        } catch (e: Exception) {
+            Log.w(TAG, "connectAllProfiles failed: ${e.cause?.message ?: e.message}")
             false
         }
     }
@@ -458,11 +506,26 @@ class BtAutoConnectService : Service() {
         private const val WATCHDOG_MS = 15 * 60_000L
         private const val TICK_MS = 20_000L
         private const val SEEN_WINDOW_MS = 3 * 60_000L
-        private const val CONNECT_COOLDOWN_MS = 25_000L
+        private const val CONNECT_COOLDOWN_MS = 12_000L
 
         @Volatile var currentStatus: String = ""
         @Volatile var connectedDeviceName: String? = null
         @Volatile var isServiceRunning: Boolean = false
+
+        /** Last few actions taken — shown in the app so problems are visible. */
+        @Volatile var logText: String = ""
+        private val eventLines = mutableListOf<String>()
+
+        fun logEvent(message: String) {
+            val time = java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.US)
+                .format(java.util.Date())
+            synchronized(eventLines) {
+                eventLines.add("$time  $message")
+                while (eventLines.size > 6) eventLines.removeAt(0)
+                logText = eventLines.joinToString("\n")
+            }
+            Log.i(TAG, message)
+        }
 
         /**
          * One-time default for this version: always-running is ON (auto-start

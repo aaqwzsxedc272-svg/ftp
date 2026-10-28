@@ -132,6 +132,8 @@ class MainActivity : AppCompatActivity() {
             BtAutoConnectService.isServiceRunning -> getString(R.string.status_searching)
             else -> getString(R.string.status_stopped)
         }
+        findViewById<TextView>(R.id.logText).text =
+            BtAutoConnectService.logText.ifBlank { getString(R.string.log_empty) }
         val adapter = getSystemService(BluetoothManager::class.java)?.adapter
         bluetoothText.text = when {
             adapter == null -> getString(R.string.status_no_bluetooth)

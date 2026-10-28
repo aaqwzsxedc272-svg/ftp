@@ -16,6 +16,7 @@
 
     <string name="how_it_works">How it works:\n• Your devices must be paired with the phone once (use the Pair button above).\n• After that, whenever Bluetooth turns on, the app searches and auto-connects: Roseland TWS RE-500 first, then itel T1Neo, then MusicMan BT-X78.\n• Only one device is connected at a time. If your device disconnects, the app searches and reconnects automatically.\n• For Samsung: set this app\'s battery to Unrestricted / Never sleeping apps so it stays alive.</string>
 
+    <string name="log_empty">Activity log will appear here…</string>
     <string name="bluetooth_on">Bluetooth is ON</string>
     <string name="bluetooth_off_hint">Bluetooth is OFF — turn it on and your device will connect automatically.</string>
 
