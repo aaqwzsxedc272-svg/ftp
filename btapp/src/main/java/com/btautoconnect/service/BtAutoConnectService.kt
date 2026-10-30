@@ -72,10 +72,22 @@ class BtAutoConnectService : Service() {
                 BluetoothAdapter.ACTION_STATE_CHANGED -> {
                     val state = intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, BluetoothAdapter.ERROR)
                     if (state == BluetoothAdapter.STATE_ON) {
+                        // THE main trigger: Bluetooth just turned on.
+                        logEvent("Bluetooth turned ON — looking for your devices")
                         updateStatus(getString(R.string.status_bluetooth_on))
-                        handler.postDelayed({ evaluate() }, 1_500)
+                        // The Bluetooth stack + audio profiles take a few
+                        // seconds to wake up: rebind the profile proxies and
+                        // retry on a schedule instead of one single attempt.
+                        a2dpProxy = null
+                        headsetProxy = null
+                        connectProfileProxies()
+                        handler.postDelayed({ evaluate() }, 1_000)
+                        handler.postDelayed({ evaluate() }, 3_500)
+                        handler.postDelayed({ evaluate() }, 8_000)
+                        handler.postDelayed({ evaluate() }, 15_000)
                     } else if (state == BluetoothAdapter.STATE_OFF) {
                         connectedDeviceName = null
+                        logEvent("Bluetooth turned OFF")
                         updateStatus(getString(R.string.status_bluetooth_off))
                     }
                 }
@@ -314,19 +326,49 @@ class BtAutoConnectService : Service() {
      * so it also works on firmwares where the method sits on a superclass.
      */
     private fun connectViaReflection(proxy: BluetoothProfile, device: BluetoothDevice): Boolean {
-        return try {
+        // Strategy 1: connect() on the profile proxy (BluetoothA2dp/BluetoothHeadset).
+        try {
             val method = proxy.javaClass.methods.firstOrNull { m ->
                 m.name == "connect" && m.parameterTypes.contentEquals(
                     arrayOf(BluetoothDevice::class.java)
                 )
             } ?: proxy.javaClass.getMethod("connect", BluetoothDevice::class.java)
             method.isAccessible = true
-            method.invoke(proxy, device) as? Boolean ?: true
+            val result = method.invoke(proxy, device) as? Boolean ?: true
+            if (result) return true
+            Log.i(TAG, "proxy connect() returned false for ${device.address}, trying binder")
         } catch (e: Exception) {
-            Log.w(TAG, "connect reflection failed for ${proxy.javaClass.simpleName}: ${e.cause?.message ?: e.message}")
-            logEvent("connect method failed: ${e.cause?.javaClass?.simpleName ?: e.javaClass.simpleName}")
-            false
+            Log.w(TAG, "proxy connect failed: ${e.cause?.message ?: e.message}")
         }
+        // Strategy 2: call connect() on the underlying Bluetooth service
+        // binder (mService) — works on some Samsung firmwares where the
+        // proxy method above is refused.
+        try {
+            var clazz: Class<*>? = proxy.javaClass
+            var serviceField: java.lang.reflect.Field? = null
+            while (clazz != null && serviceField == null) {
+                serviceField = try { clazz.getDeclaredField("mService") } catch (_: Exception) { null }
+                clazz = clazz.superclass
+            }
+            if (serviceField != null) {
+                serviceField.isAccessible = true
+                val service = serviceField.get(proxy)
+                if (service != null) {
+                    val method = service.javaClass.methods.firstOrNull { m ->
+                        m.name == "connect" && m.parameterTypes.size == 1
+                    }
+                    if (method != null) {
+                        method.isAccessible = true
+                        val result = method.invoke(service, device)
+                        if (result as? Boolean != false) return true
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "binder connect failed: ${e.cause?.message ?: e.message}")
+            logEvent("connect method failed: ${e.cause?.javaClass?.simpleName ?: e.javaClass.simpleName}")
+        }
+        return false
     }
 
     /** Hidden BluetoothDevice.connectAllProfiles() — fallback connect path. */
